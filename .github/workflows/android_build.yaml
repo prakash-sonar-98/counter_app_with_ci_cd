@@ -26,7 +26,7 @@ jobs:
       id: get_version
       run: |
         VERSION_NAME=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
-        DATE_TIME=$(date +'%Y%m%d%H%M%S')
+        DATE_TIME=$(date +'%Y-%m-%d-%H%M%S')
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
         echo "DATE_TIME=$DATE_TIME" >> $GITHUB_ENV
         # echo "VERSION=$(grep 'version:' pubspec.yaml | cut -d ' ' -f2 | cut -d '+' -f1)" >> $GITHUB_ENV
@@ -53,13 +53,22 @@ jobs:
 
     - name: Rename APK with version and timestamp
       run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-v-${{ env.VERSION_NAME }}-${{ env.DATE_TIME }}.apk
-        # TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        # NEW_APK_NAME=app-release-v-${VERSION}-${TIMESTAMP}.apk
-        # mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/$NEW_APK_NAME
-        # echo "NEW_APK_NAME=$NEW_APK_NAME" >> $GITHUB_ENV
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: signed-apk
         path: build/app/outputs/flutter-apk/app-release-v-${{ env.VERSION_NAME }}-${{ env.DATE_TIME }}.apk
+
+# Storing build artifacts on releases section permanently
+    - name: Upload APK to GitHub Releases
+      if: github.event_name == 'push'
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: signed-apk
+        token: ${{ secrets.GITHUB_TOKEN }}
+        release_name: Release ${{ env.VERSION_NAME }} ${{ env.DATE_TIME }}
+        tag: v${{ env.VERSION_NAME }}
+        commit: ${{ github.sha }}
+        draft: false
+        prerelease: false
