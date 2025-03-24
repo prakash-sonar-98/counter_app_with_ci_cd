@@ -24,7 +24,7 @@ jobs:
 
     - name: Extract version from pubspec.yaml
       id: get_version
-      run: 
+      run: |
         VERSION_NAME=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
         DATE_TIME=$(date +'%Y%m%d%H%M%S')
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
