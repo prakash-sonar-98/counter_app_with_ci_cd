@@ -65,7 +65,7 @@ jobs:
       if: github.event_name == 'push'
       uses: ncipollo/release-action@v1
       with:
-        artifacts: signed-apk
+        artifacts: build/app/outputs/flutter-apk/app-release-v-${{ env.VERSION_NAME }}-${{ env.DATE_TIME }}.apk
         token: ${{ secrets.GITHUB_TOKEN }}
         release_name: Release ${{ env.VERSION_NAME }} ${{ env.DATE_TIME }}
         tag: v${{ env.VERSION_NAME }}
