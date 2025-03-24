@@ -1,0 +1,60 @@
+name: Build and Sign Android APK
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build Signed APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.1'
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Extract version from pubspec.yaml
+      id: get_version
+      run: echo "VERSION=$(grep 'version:' pubspec.yaml | cut -d ' ' -f2 | cut -d '+' -f1)" >> $GITHUB_ENV
+
+    - name: Decode keystore
+      env:
+        ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      run: |
+        echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/release-keystore.jks
+
+    - name: Create key.properties
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
+          echo "storeFile=release-keystore.jks" >> android/key.properties
+
+    - name: Build APK
+      run: flutter build apk --release
+
+    - name: Rename APK with version and timestamp
+      run: |
+        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        NEW_APK_NAME=app-release-v-${VERSION}-${TIMESTAMP}.apk
+        mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/$NEW_APK_NAME
+        echo "NEW_APK_NAME=$NEW_APK_NAME" >> $GITHUB_ENV
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: build/app/outputs/flutter-apk/${{ env.NEW_APK_NAME }}
