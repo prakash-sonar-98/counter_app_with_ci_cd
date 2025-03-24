@@ -24,7 +24,12 @@ jobs:
 
     - name: Extract version from pubspec.yaml
       id: get_version
-      run: echo "VERSION=$(grep 'version:' pubspec.yaml | cut -d ' ' -f2 | cut -d '+' -f1)" >> $GITHUB_ENV
+      run: 
+        VERSION_NAME=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+        DATE_TIME=$(date +'%Y%m%d%H%M%S')
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+        echo "DATE_TIME=$DATE_TIME" >> $GITHUB_ENV
+        # echo "VERSION=$(grep 'version:' pubspec.yaml | cut -d ' ' -f2 | cut -d '+' -f1)" >> $GITHUB_ENV
 
     - name: Decode keystore
       env:
@@ -47,14 +52,14 @@ jobs:
       run: flutter build apk --release
 
     - name: Rename APK with version and timestamp
-      run: |
-        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        NEW_APK_NAME=app-release-v-${VERSION}-${TIMESTAMP}.apk
-        mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/$NEW_APK_NAME
-        echo "NEW_APK_NAME=$NEW_APK_NAME" >> $GITHUB_ENV
+      run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-v-${{ env.VERSION_NAME }}-${{ env.DATE_TIME }}.apk
+        # TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        # NEW_APK_NAME=app-release-v-${VERSION}-${TIMESTAMP}.apk
+        # mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/$NEW_APK_NAME
+        # echo "NEW_APK_NAME=$NEW_APK_NAME" >> $GITHUB_ENV
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-release
-        path: build/app/outputs/flutter-apk/${{ env.NEW_APK_NAME }}
+        name: signed-apk
+        path: build/app/outputs/flutter-apk/app-release-v-${{ env.VERSION_NAME }}-${{ env.DATE_TIME }}.apk
